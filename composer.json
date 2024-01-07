@@ -1,0 +1,29 @@
+{
+    "name": "corrivate/laravel-mysqldump",
+    "description": "Artisan commands to conveniently dump and import the DB, with stripping options",
+    "keywords": ["laravel", "mysql", "mysqldump"],
+    "type": "library",
+    "require": {
+        "spatie/db-dumper": "^3.4"
+    },
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Corrivate\\LaravelMysqldump\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Corrivate\\LaravelMysqldump\\MysqlDumpServiceProvider"
+            ]
+        }
+    },
+    "authors": [
+        {
+            "name": "Lau",
+            "email": "lau.bannenberg@gmail.com"
+        }
+    ],
+    "minimum-stability": "stable"
+}
