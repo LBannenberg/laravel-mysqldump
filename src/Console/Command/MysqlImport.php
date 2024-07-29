@@ -11,6 +11,8 @@ class MysqlImport extends Command
     protected $signature = 'mysql:import {--f|filename=}';
     protected $description = 'Import a MySQLdump file';
 
+    private string $tempFilename = '';
+
 
     public function handle(): int
     {
@@ -28,15 +30,21 @@ class MysqlImport extends Command
         }
 
         DB::unprepared(file_get_contents($filename));
-        $this->output->success("It is done!");
+        $this->output->success("Import complete!");
+
+        if($this->tempFilename && file_exists($this->tempFilename)) {
+            unlink($this->tempFilename);
+        }
+
         return 0;
     }
 
     private function checkFile(string $filename): string
     {
         if (!file_exists($filename) && file_exists("$filename.gz")) {
+            $this->tempFilename = $filename;
             $this->output->info("Unzipping $filename.gz to $filename");
-            Process::forever()->run(['gunzip', "$filename.gz"]);
+            Process::forever()->run(['gunzip', "-k", "$filename.gz"]);
         }
 
         if (!file_exists($filename)) {
