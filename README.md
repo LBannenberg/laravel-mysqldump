@@ -17,7 +17,7 @@ composer require corrivate/laravel-mysqldump
 ```
 
 ## Configuration
-Configuration is not required. You can ad-hoc decide to strip tables by using `artisan mysql:export --strip=` with a list of tables.
+Configuration is not required. You can ad-hoc decide to strip tables by using `artisan mysql:export --strip=` with a comma-separated list of tables.
 
 If your project has a standard set of tables you usually want to strip during export, you can configure them so that you can use the `--stripped` option. You can do so in in `config/database.php` like this:
 
