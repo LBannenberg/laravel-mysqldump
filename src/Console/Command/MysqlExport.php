@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Corrivate\LaravelMysqldump\Console\Command;
 
 use Corrivate\LaravelMysqldump\MySqlDumper;
@@ -16,6 +18,7 @@ class MysqlExport extends Command
     {--strip= : list extra tables to strip}
     {--stripped=1 : strip configured tables in config("database.connections.mysql.export.stripped") ; set 0 if you only want to --strip specific tables}
     {--schema : dump only the schema & migrations}';
+
     protected $description = 'Export a MySQLdump';
 
     public function handle(): int
@@ -25,7 +28,7 @@ class MysqlExport extends Command
         }
 
         if ($filename = $this->option('filename')) {
-            if (!preg_match('/\.sql$/', $filename)) {
+            if (! preg_match('/\.sql$/', $filename)) {
                 $filename = $filename.'.sql';
             }
         } else {
@@ -45,26 +48,27 @@ class MysqlExport extends Command
             return $result;
         }
 
-        $this->output->success("Export complete!");
+        $this->output->success('Export complete!');
+
         return 0;
     }
-
 
     private function validateArguments(): int
     {
         if ($this->option('strip') && $this->option('full')) {
-            $this->output->error("Bad arguments: you cannot specify both --strip and --full.");
+            $this->output->error('Bad arguments: you cannot specify both --strip and --full.');
+
             return 1;
         }
 
         if ($this->option('schema') && ($this->option('strip') || $this->option('full'))) {
-            $this->output->error("Bad arguments: you cannot combine --schema with --strip or --full.");
+            $this->output->error('Bad arguments: you cannot combine --schema with --strip or --full.');
+
             return 1;
         }
 
         return 0;
     }
-
 
     private function schemaDump(string $filename): int
     {
@@ -90,13 +94,12 @@ class MysqlExport extends Command
         return 0;
     }
 
-
     private function fullDump(string $filename): int
     {
         $command = $this->baseCommand();
 
         if ($this->option('gzip')) {
-            $gzipCompressor = new GzipCompressor();
+            $gzipCompressor = new GzipCompressor;
             $filename .= '.'.$gzipCompressor->useExtension();
             $command->useCompressor($gzipCompressor);
         }
@@ -107,16 +110,15 @@ class MysqlExport extends Command
         return 0;
     }
 
-
     private function strippedDump(string $filename): int
     {
         $strip = $this->parseStripOptions();
 
-        if (!$strip) {
+        if (! $strip) {
             return $this->fullDump($filename);
         }
 
-        $this->output->info("Stripping these tables: ".implode(', ', $strip));
+        $this->output->info('Stripping these tables: '.implode(', ', $strip));
 
         // Export schema
         $this->baseCommand()
@@ -153,8 +155,8 @@ class MysqlExport extends Command
     private function parseStripOptions(): array
     {
         if ($this->option('stripped')
-            && !config('database.connections.mysql.export.stripped')
-            && !$this->option('strip')) {
+            && ! config('database.connections.mysql.export.stripped')
+            && ! $this->option('strip')) {
             $this->output->warning("No full export requested, but also no stripping configuration found in config('database.connections.mysql.export.stripped')");
         }
 
@@ -168,11 +170,9 @@ class MysqlExport extends Command
             $strip = array_merge(config('database.connections.mysql.export.stripped'), $strip);
         }
 
-        $strip = array_map(fn($item) => trim($item), $strip);
+        $strip = array_map(fn ($item) => trim($item), $strip);
         $strip = array_filter($strip);
 
         return array_unique($strip);
     }
-
-
 }
