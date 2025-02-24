@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Corrivate\LaravelMysqldump;
 
 use Illuminate\Support\ServiceProvider;
@@ -21,21 +23,19 @@ class MysqlDumpServiceProvider extends ServiceProvider
     {
         $this->commands([
             \Corrivate\LaravelMysqldump\Console\Command\MysqlExport::class,
-            \Corrivate\LaravelMysqldump\Console\Command\MysqlImport::class
+            \Corrivate\LaravelMysqldump\Console\Command\MysqlImport::class,
         ]);
     }
 
-
     /**
      * Get the services provided by the provider.
-     *
-     * @return array
+     * @return string[]
      */
     public function provides(): array
     {
         return [
             \Corrivate\LaravelMysqldump\Console\Command\MysqlExport::class,
-            \Corrivate\LaravelMysqldump\Console\Command\MysqlImport::class
+            \Corrivate\LaravelMysqldump\Console\Command\MysqlImport::class,
         ];
     }
 }
