@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Corrivate\LaravelMysqldump\Console\Command;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Str;
 
@@ -19,6 +20,16 @@ class MysqlImport extends Command
     public function handle(): int
     {
         $filename = (string) $this->argument('filename');
+
+        if (! App::isDownForMaintenance()) {
+            $this->warn('The application is not in maintenance mode. Please enable maintenance mode first.');
+
+            return 1;
+        }
+
+        if ($this->isPulseInstalled()) {
+            $this->confirm('Have you paused the pulse:check supervisor task?');
+        }
 
         if ($problem = $this->checkFile($filename)) {
             $this->output->error($problem);
@@ -82,5 +93,24 @@ class MysqlImport extends Command
             escapeshellarg(config('database.connections.mysql.database')),
             escapeshellarg($this->tempFilename ?: $fileName)
         );
+    }
+
+    private function isPulseInstalled(): bool
+    {
+        $installedJsonPath = base_path('vendor/composer/installed.json');
+
+        if (!file_exists($installedJsonPath)) {
+            return false;
+        }
+
+        $installed = json_decode(file_get_contents($installedJsonPath), true);
+
+        foreach ($installed['packages'] as $package) {
+            if ($package['name'] === 'laravel/pulse') {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
