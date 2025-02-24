@@ -28,7 +28,7 @@ class MysqlImport extends Command
         }
 
         // The actual import
-        DB::unprepared(file_get_contents($this->tempFilename ?: $filename));
+        DB::unprepared(file_get_contents($this->tempFilename ?: $filename)); // @phpstan-ignore argument.type
         $this->output->success('Import complete!');
 
         if ($this->tempFilename && file_exists($this->tempFilename)) {
