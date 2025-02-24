@@ -4,7 +4,7 @@
     "keywords": ["laravel", "mysql", "mysqldump"],
     "type": "library",
     "require": {
-        "spatie/db-dumper": "^3.4"
+        "spatie/db-dumper": "^3.8"
     },
     "license": "MIT",
     "autoload": {
