@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Corrivate\LaravelMysqldump\Console\Command;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Str;
 
@@ -27,16 +26,25 @@ class MysqlImport extends Command
             return 1;
         }
 
+        $command = $this->prepareCommand($filename);
+
         // The actual import
         $this->output->info("Importing $this->tempFilename...");
-        DB::unprepared(file_get_contents($this->tempFilename ?: $filename)); // @phpstan-ignore argument.type
-        $this->output->success('Import complete!');
+
+        $result = Process::run($command);
+
+        if ($result->successful()) {
+            $this->output->success('Import complete!');
+        } else {
+            $this->error('Failed to import SQL file: '.$result->errorOutput());
+        }
 
         if ($this->tempFilename && file_exists($this->tempFilename)) {
+            $this->info('Cleaning up..');
             unlink($this->tempFilename);
         }
 
-        return 0;
+        return (int) $result->exitCode();
     }
 
     private function checkFile(string $filename): string
@@ -62,5 +70,17 @@ class MysqlImport extends Command
 
         // No problems encountered
         return '';
+    }
+
+    private function prepareCommand(string $fileName): string
+    {
+        return sprintf(
+            'mysql -h %s -u %s -p%s %s < %s',
+            escapeshellarg(config('database.connections.mysql.host')),
+            escapeshellarg(config('database.connections.mysql.username')),
+            escapeshellarg(config('database.connections.mysql.password')),
+            escapeshellarg(config('database.connections.mysql.database')),
+            escapeshellarg($this->tempFilename ?: $fileName)
+        );
     }
 }
