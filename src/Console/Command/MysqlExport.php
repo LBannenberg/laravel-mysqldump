@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Corrivate\LaravelMysqldump\Console\Command;
 
-use Corrivate\LaravelMysqldump\MySqlDumper;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Process;
 use Spatie\DbDumper\Compressors\GzipCompressor;
+use Spatie\DbDumper\Databases\MySql;
 
 class MysqlExport extends Command
 {
@@ -16,7 +16,7 @@ class MysqlExport extends Command
     {--gzip=1 : compress output (adds .gz to filename)}
     {--full : do not strip any table }
     {--strip= : list extra tables to strip}
-    {--stripped=1 : strip configured tables in config("database.connections.mysql.export.stripped") ; set 0 if you only want to --strip specific tables}
+    {--config-stripped=1 : strip configured tables in config("database.connections.mysql.strip_tables_on_export") ; set 0 if you only want to --strip specific tables}
     {--schema : dump only the schema & migrations}';
 
     protected $description = 'Export a MySQLdump';
@@ -74,13 +74,13 @@ class MysqlExport extends Command
     {
         // Export schema
         $this->baseCommand()
-            ->addExtraOption('--no-data')
+            ->doNotDumpData()
             ->dumpToFile($filename);
 
         // Append migrations
         $this->baseCommand()
             ->doNotCreateTables()
-            ->appendToDump()
+            ->useAppendMode()
             ->includeTables('migrations')
             ->dumpToFile($filename);
 
@@ -122,13 +122,13 @@ class MysqlExport extends Command
 
         // Export schema
         $this->baseCommand()
-            ->addExtraOption('--no-data')
+            ->doNotDumpData()
             ->dumpToFile($filename);
 
         // Export data to not-stripped tables
         $this->baseCommand()
             ->doNotCreateTables()
-            ->appendToDump()
+            ->useAppendMode()
             ->excludeTables($strip)
             ->dumpToFile($filename);
 
@@ -142,22 +142,23 @@ class MysqlExport extends Command
         return 0;
     }
 
-    private function baseCommand(): MySqlDumper
+    private function baseCommand(): MySql
     {
-        return MySqlDumper::create()
-            ->setHost(config('database.connections.mysql.host'))
-            ->setPort(config('database.connections.mysql.port'))
-            ->setDbName(config('database.connections.mysql.database'))
-            ->setUserName(config('database.connections.mysql.username'))
-            ->setPassword(config('database.connections.mysql.password'));
+        return MySql::create() // @phpstan-ignore return.type
+            ->setHost((string) config('database.connections.mysql.host')) // @phpstan-ignore cast.string
+            ->setPort((int) config('database.connections.mysql.port')) // @phpstan-ignore cast.int
+            ->setDbName((string) config('database.connections.mysql.database')) // @phpstan-ignore cast.string
+            ->setUserName((string) config('database.connections.mysql.username')) // @phpstan-ignore cast.string
+            ->setPassword((string) config('database.connections.mysql.password')); // @phpstan-ignore cast.string
     }
 
+    /** @return string[] */
     private function parseStripOptions(): array
     {
-        if ($this->option('stripped')
-            && ! config('database.connections.mysql.export.stripped')
+        if ($this->option('config-stripped')
+            && ! config('database.connections.mysql.strip_tables_on_export')
             && ! $this->option('strip')) {
-            $this->output->warning("No full export requested, but also no stripping configuration found in config('database.connections.mysql.export.stripped')");
+            $this->output->warning("No full export requested, but also no stripping configuration found in config('database.connections.mysql.strip_tables_on_export')");
         }
 
         $strip = [];
@@ -166,8 +167,10 @@ class MysqlExport extends Command
             $strip = explode(',', $this->option('strip'));
         }
 
-        if ($this->option('stripped') && config('database.connections.mysql.export.stripped')) {
-            $strip = array_merge(config('database.connections.mysql.export.stripped'), $strip);
+        /** @var string[] $config */
+        $config = config('database.connections.mysql.strip_tables_on_export');
+        if ($this->option('config-stripped') && $config) {
+            $strip = array_merge($config, $strip);
         }
 
         $strip = array_map(fn ($item) => trim($item), $strip);
