@@ -1,5 +1,15 @@
 # laravel-mysqldump
 
+![logo](logo.png)
+
+<p>
+<a href="https://packagist.org/packages/corrivate/laravel-mysqldump"><img src="https://img.shields.io/packagist/dt/corrivate/laravel-mysqldump" alt="Total Downloads"></a>
+<a href="https://packagist.org/packages/corrivate/laravel-mysqldump"><img src="https://img.shields.io/packagist/v/corrivate/laravel-mysqldump" alt="Latest Stable Version"></a>
+<a href="https://packagist.org/packages/corrivate/laravel-mysqldump"><img src="https://img.shields.io/packagist/l/corrivate/laravel-mysqldump" alt="License"></a>
+
+</p>
+
+
 ## Purpose
 
 * Easily dump whole databases or specific tables, with `artisan mysql:export`
