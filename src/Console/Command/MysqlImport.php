@@ -47,7 +47,7 @@ class MysqlImport extends Command
         if ($result->successful()) {
             $this->output->success('Import complete!');
         } else {
-            $this->error('Failed to import SQL file: '.$result->errorOutput());
+            $this->error('Failed to import SQL file: ' . $result->errorOutput());
         }
 
         if ($this->tempFilename && file_exists($this->tempFilename)) {
@@ -99,7 +99,7 @@ class MysqlImport extends Command
     {
         $installedJsonPath = base_path('vendor/composer/installed.json');
 
-        if (!file_exists($installedJsonPath)) {
+        if (! file_exists($installedJsonPath)) {
             return false;
         }
 

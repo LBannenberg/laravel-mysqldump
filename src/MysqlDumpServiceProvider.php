@@ -29,6 +29,7 @@ class MysqlDumpServiceProvider extends ServiceProvider
 
     /**
      * Get the services provided by the provider.
+     *
      * @return string[]
      */
     public function provides(): array

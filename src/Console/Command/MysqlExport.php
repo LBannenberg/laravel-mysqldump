@@ -29,7 +29,7 @@ class MysqlExport extends Command
 
         if ($filename = $this->option('filename')) {
             if (! preg_match('/\.sql$/', $filename)) {
-                $filename = $filename.'.sql';
+                $filename = $filename . '.sql';
             }
         } else {
             $filename = 'dump.sql';
@@ -100,7 +100,7 @@ class MysqlExport extends Command
 
         if ($this->option('gzip')) {
             $gzipCompressor = new GzipCompressor;
-            $filename .= '.'.$gzipCompressor->useExtension();
+            $filename .= '.' . $gzipCompressor->useExtension();
             $command->useCompressor($gzipCompressor);
         }
 
@@ -118,7 +118,7 @@ class MysqlExport extends Command
             return $this->fullDump($filename);
         }
 
-        $this->output->info('Stripping these tables: '.implode(', ', $strip));
+        $this->output->info('Stripping these tables: ' . implode(', ', $strip));
 
         // Export schema
         $this->baseCommand()
