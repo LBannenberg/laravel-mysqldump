@@ -3,7 +3,7 @@
     "description": "Artisan commands to conveniently dump and import the DB, with stripping options",
     "keywords": ["laravel", "mysql", "mysqldump"],
     "type": "library",
-    "version": "3.0.1",
+    "version": "4.0.0",
     "require": {
         "php": "^8.0",
         "spatie/db-dumper": "^3.8"
