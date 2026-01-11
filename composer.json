@@ -5,6 +5,7 @@
     "type": "library",
     "version": "3.0.1",
     "require": {
+        "php": "^8.0",
         "spatie/db-dumper": "^3.8"
     },
     "license": "MIT",

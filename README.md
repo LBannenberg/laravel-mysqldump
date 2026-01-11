@@ -16,6 +16,7 @@
 * Easily import, with `artisan mysql:import`
 * Strip content from tables, for example, strip the customer data but keep the product catalog.
 
+<span style="color:red">**IMPORTANT**</span> Stripping content from tables does not respect foreign key constraints. Meaning, if you strip a parent table but NOT a child table that depends on the parent, and then import that file somewhere else, you're going to foreign key failures. Always make sure to also strip dependent tables.
 
 ## Setup
 
@@ -59,8 +60,32 @@ If your project has a standard set of tables you usually want to strip during ex
 ],
 ```
 
-If you need to do an export where you want to override this configuration, and only strip the tables you specify on the command line, you can do so by passing a `--config-stripped=0` argument along with the `--strip=your,specific,tables` argument. 
+This configuration will be applied by default when using a `stripped` mode export. If you want to run a stripped export without this configuration, pass a `--config-stripped=0` option to the command.
 
+Note that you can combine or replace this with the `--strip-manual=your,specific,tables` option.
+
+
+## Usage
+
+### Export
+```bash
+artisan mysql:export [options]
+```
+
+The default behavior is to create a gzipped file `dump.sql.gz` with an export based on your stripping configuration.
+
+Options
+* `--filename=dump.sql`: Name of the file to export to. Note that '.gz' will be appended if using the gzip option as well.
+* `--gzip=1` can be set to 0 to turn off compression.
+* `--mode=stripped`: perform a `stripped`, `schema` or `full` export. Default is stripped.
+* `--config-stripped=1` adds the tables configured in `database.mysql.strip_tables_on_export` to the list of tables to strip. Default is 1; set to 0 if you only want to manually strip tables.
+* `--strip-manual=` (OPTIONAL) accepts a comma-separated list of tables to strip. These will me merged with those from your configuration (if any).
+
+### Import
+
+```bash
+artisan mysql:import <filename>
+```
 
 ## Credits
 

@@ -22,9 +22,9 @@ class MysqlImport extends Command
         $filename = (string) $this->argument('filename');
 
         if (! App::isDownForMaintenance()) {
-            $this->warn('The application is not in maintenance mode. Please enable maintenance mode first.');
+            $this->warn('The application is not in maintenance mode. Please enable maintenance mode first, using `artisan down`.');
 
-            return 1;
+            return Command::FAILURE;
         }
 
         if ($this->isPulseInstalled()) {
@@ -34,7 +34,7 @@ class MysqlImport extends Command
         if ($problem = $this->checkFile($filename)) {
             $this->output->error($problem);
 
-            return 1;
+            return Command::FAILURE;
         }
 
         $command = $this->prepareCommand($filename);

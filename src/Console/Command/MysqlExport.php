@@ -12,66 +12,63 @@ use Spatie\DbDumper\Databases\MySql;
 class MysqlExport extends Command
 {
     protected $signature = 'mysql:export
-    {--f|filename= : name of the file to export to}
-    {--gzip=1 : compress output (adds .gz to filename)}
-    {--full : do not strip any table }
-    {--strip= : list extra tables to strip}
-    {--config-stripped=1 : strip configured tables in config("database.connections.mysql.strip_tables_on_export") ; set 0 if you only want to --strip specific tables}
-    {--schema : dump only the schema & migrations}';
+    {--f|filename=dump.sql : name of the file to export to}
+    {--m|mode=stripped : Perform either `full`, `schema` or `stripped` export}
+    {--g|gzip=1 : compress output (adds .gz to filename)}
+    {--s|strip-manual= : list extra tables to strip}
+    {--c|config-stripped=1 : strip configured tables in config("database.connections.mysql.strip_tables_on_export") ; set 0 if you only want to strip manually}';
 
     protected $description = 'Export a MySQLdump';
 
     public function handle(): int
     {
-        if ($exitCode = $this->validateArguments()) {
-            return $exitCode;
+        $filename = $this->cleanFilename();
+
+        if(file_exists($filename)) {
+            $this->output->error("File $filename already exists, please clean up first to prevent data loss.");
+            return Command::FAILURE;
         }
 
-        if ($filename = $this->option('filename')) {
-            if (! preg_match('/\.sql$/', $filename)) {
-                $filename = $filename . '.sql';
+        if(file_exists("$filename.gz")) {
+            $this->output->error("File $filename.gz already exists, please clean up first to prevent data loss.");
+            return Command::FAILURE;
+        }
+
+        return match($this->option('mode')) {
+            'stripped' => $this->strippedDump($filename),
+            'schema' => $this->schemaDump($filename),
+            'full' => $this->fullDump($filename),
+            default => function(){
+                $this->output->error('Bad option: `mode` must be one of `stripped`, `schema` or `full`');
+                return Command::INVALID;
             }
-        } else {
-            $filename = 'dump.sql';
-        }
-
-        if ($this->option('schema')) {
-            $result = $this->schemaDump($filename);
-        } elseif ($this->option('full')) {
-            $result = $this->fullDump($filename);
-        } else {
-            $result = $this->strippedDump($filename);
-        }
-
-        // Nonzero result = problem
-        if ($result) {
-            return $result;
-        }
-
-        $this->output->success('Export complete!');
-
-        return 0;
+        };
     }
 
-    private function validateArguments(): int
+
+    private function cleanFilename(): string
     {
-        if ($this->option('strip') && $this->option('full')) {
-            $this->output->error('Bad arguments: you cannot specify both --strip and --full.');
+        $filename = trim($this->option('filename'));
 
-            return 1;
+        if (str_ends_with($filename, '.gz')) {
+            $filename = substr($filename, 0, strlen($filename) - 3);
+            if(!$this->option('gzip')) {
+                throw new \InvalidArgumentException("You cannot specify a filename ending in .gz and set --gzip=0");
+            }
         }
 
-        if ($this->option('schema') && ($this->option('strip') || $this->option('full'))) {
-            $this->output->error('Bad arguments: you cannot combine --schema with --strip or --full.');
-
-            return 1;
+        if (!str_ends_with($filename, '.sql')) {
+            $filename .= '.sql';
         }
 
-        return 0;
+        return $filename;
     }
+
 
     private function schemaDump(string $filename): int
     {
+        $this->output->info("Writing schema dump to $filename");
+
         // Export schema
         $this->baseCommand()
             ->doNotDumpData()
@@ -85,13 +82,15 @@ class MysqlExport extends Command
             ->dumpToFile($filename);
 
         if ($this->option('gzip')) {
+            $this->output->info("Zipping dump to $filename.gz");
             Process::forever()->run(['gzip', $filename]);
-            $this->output->info("Writing schema dump to $filename.gz");
-        } else {
-            $this->output->info("Writing schema dump to $filename");
+            if(file_exists($filename)) {
+                unlink($filename);
+            }
         }
 
-        return 0;
+        $this->output->success('Export complete!');
+        return Command::SUCCESS;
     }
 
     private function fullDump(string $filename): int
@@ -99,26 +98,32 @@ class MysqlExport extends Command
         $command = $this->baseCommand();
 
         if ($this->option('gzip')) {
-            $gzipCompressor = new GzipCompressor;
-            $filename .= '.' . $gzipCompressor->useExtension();
-            $command->useCompressor($gzipCompressor);
+            $filename .= '.gz';
+            $command->useCompressor(new GzipCompressor);
         }
 
         $this->output->info("Exporting full dump to $filename");
         $command->dumpToFile($filename);
 
-        return 0;
+        $this->output->success('Export complete!');
+        return Command::SUCCESS;
     }
 
     private function strippedDump(string $filename): int
     {
+        $this->output->info("Writing schema dump to $filename");
+
         $strip = $this->parseStripOptions();
 
         if (! $strip) {
-            return $this->fullDump($filename);
+            $this->output->error('Running in `stripped` mode, but no tables configured for stripping and no tables manually selected for stripping.');
+            return Command::FAILURE;
         }
 
-        $this->output->info('Stripping these tables: ' . implode(', ', $strip));
+        $this->output->info('Stripping these tables:');
+        foreach($strip as $name) {
+            $this->output->writeln("  $name");
+        }
 
         // Export schema
         $this->baseCommand()
@@ -133,13 +138,15 @@ class MysqlExport extends Command
             ->dumpToFile($filename);
 
         if ($this->option('gzip')) {
+            $this->output->info("Zipping dump to $filename.gz");
             Process::forever()->run(['gzip', $filename]);
-            $this->output->info("Writing schema dump to $filename.gz");
-        } else {
-            $this->output->info("Writing schema dump to $filename");
+            if(file_exists($filename)) {
+                unlink($filename);
+            }
         }
 
-        return 0;
+        $this->output->success('Export complete!');
+        return Command::SUCCESS;
     }
 
     private function baseCommand(): MySql
@@ -163,8 +170,8 @@ class MysqlExport extends Command
 
         $strip = [];
 
-        if ($this->option('strip')) {
-            $strip = explode(',', $this->option('strip'));
+        if ($this->option('strip-manual')) {
+            $strip = explode(',', $this->option('strip-manual'));
         }
 
         /** @var string[] $config */
